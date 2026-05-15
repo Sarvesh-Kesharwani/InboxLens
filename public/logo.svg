@@ -1,0 +1,8 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="InboxLens logo">
+  <rect x="12" y="18" width="104" height="92" rx="26" fill="#10201F"/>
+  <path d="M30 45C30 39.477 34.477 35 40 35H88C93.523 35 98 39.477 98 45V80C98 85.523 93.523 90 88 90H40C34.477 90 30 85.523 30 80V45Z" fill="#F8FBF8"/>
+  <path d="M35 43L58.558 62.219C61.729 64.807 66.271 64.807 69.442 62.219L93 43" stroke="#14B8A6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="82" cy="77" r="22" fill="#F4B942" stroke="#10201F" stroke-width="7"/>
+  <circle cx="82" cy="77" r="10" fill="#FFFFFF"/>
+  <path d="M97 93L110 106" stroke="#F4B942" stroke-width="10" stroke-linecap="round"/>
+</svg>

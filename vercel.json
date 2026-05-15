@@ -1,0 +1,8 @@
+{
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/sync/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
