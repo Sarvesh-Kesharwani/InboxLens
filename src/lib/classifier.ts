@@ -1,6 +1,32 @@
 import { categories } from "./data";
 import type { CategoryKey, MailItem } from "./types";
 
+const shoppingSiteTerms = [
+  "amaz",
+  "amazon",
+  "amazon.in",
+  "flipkart",
+  "myntra",
+  "nykaa",
+  "nyka",
+  "skinkraft",
+  "skin kraft",
+  "ajio",
+  "meesho",
+  "tatacliq",
+  "tata cliq",
+  "snapdeal",
+  "firstcry",
+  "shopsy",
+  "shopclues",
+  "purplle",
+  "lenskart",
+  "zepto",
+  "bigbasket",
+  "blinkit",
+  "swiggy instamart",
+];
+
 const keywordRules: Array<{ category: CategoryKey; terms: string[]; reason: string }> = [
   {
     category: "Security / Login Alerts",
@@ -13,8 +39,13 @@ const keywordRules: Array<{ category: CategoryKey; terms: string[]; reason: stri
     reason: "Finance, billing, or payment language detected.",
   },
   {
+    category: "Shopping",
+    terms: shoppingSiteTerms,
+    reason: "Shopping website or marketplace sender detected.",
+  },
+  {
     category: "Shopping / Orders",
-    terms: ["order", "package", "delivered", "shipment", "amazon", "flipkart", "myntra"],
+    terms: ["order", "package", "delivered", "shipment", "invoice", "tracking", "return", "refund"],
     reason: "Order or marketplace language detected.",
   },
   {
@@ -45,6 +76,17 @@ export function classifyMail(input: Pick<MailItem, "sender" | "subject" | "snipp
   reason: string;
 } {
   const haystack = `${input.sender} ${input.email} ${input.subject} ${input.snippet}`.toLowerCase();
+  const senderAndEmail = `${input.sender} ${input.email}`.toLowerCase();
+  const shoppingSiteHits = shoppingSiteTerms.filter((term) => senderAndEmail.includes(term)).length;
+
+  if (shoppingSiteHits > 0) {
+    return {
+      category: "Shopping",
+      confidence: Math.min(96, 86 + shoppingSiteHits * 5),
+      reason: "Shopping website sender or domain matched the marketplace rule.",
+    };
+  }
+
   const ranked = keywordRules
     .map((rule) => {
       const hits = rule.terms.filter((term) => haystack.includes(term)).length;

@@ -6,9 +6,12 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  Eye,
   Inbox,
   LockKeyhole,
   Mail,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plane,
   RefreshCw,
   Search,
@@ -20,7 +23,7 @@ import {
   Wand2,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { categories, categoryColors, initialRules, initialSyncState, sampleEmails } from "@/lib/data";
 import type { CategoryKey, MailItem, Rule, SyncState } from "@/lib/types";
 
@@ -29,6 +32,7 @@ const navItems = ["Dashboard", "Categories", "Search", "Rules", "Sync", "Setting
 const categoryIcons: Record<CategoryKey, typeof Inbox> = {
   Important: AlertTriangle,
   "Finance / Bills": CreditCard,
+  Shopping: ShoppingBag,
   "Shopping / Orders": ShoppingBag,
   Travel: Plane,
   Work: Inbox,
@@ -68,6 +72,13 @@ export function InboxLensApp() {
   const [gmailAccount, setGmailAccount] = useState<string | null>(null);
   const [gmailNextPageToken, setGmailNextPageToken] = useState<string | null>(null);
   const [gmailTotalEstimate, setGmailTotalEstimate] = useState<number | null>(null);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [mailBodyStatus, setMailBodyStatus] = useState<"idle" | "loading" | "error">("idle");
+  const categoriesRef = useRef<HTMLElement | null>(null);
+  const mailRef = useRef<HTMLElement | null>(null);
+  const rulesRef = useRef<HTMLDivElement | null>(null);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const counts = useMemo(() => {
     return categories.map((category) => ({
@@ -134,6 +145,39 @@ export function InboxLensApp() {
         setNotice("Could not read Gmail connection status.");
       });
   }, []);
+
+  useEffect(() => {
+    if (!selectedEmail) return;
+
+    if (selectedEmail.bodyText || !selectedEmail.labels.includes("gmail")) {
+      setMailBodyStatus("idle");
+      return;
+    }
+
+    let cancelled = false;
+    setMailBodyStatus("loading");
+
+    fetch(`/api/gmail/message?id=${encodeURIComponent(selectedEmail.id)}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Could not load full message.");
+        return data as { bodyText: string };
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setEmails((current) => current.map((email) => (email.id === selectedEmail.id ? { ...email, bodyText: data.bodyText } : email)));
+        setMailBodyStatus("idle");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setMailBodyStatus("error");
+        setNotice(err instanceof Error ? err.message : "Could not load the full Gmail message.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedEmail]);
 
   async function connectGmail() {
     setSync((current) => ({ ...current, phase: "connecting", message: "Checking Gmail OAuth configuration" }));
@@ -268,8 +312,33 @@ export function InboxLensApp() {
     setNotice(`Rule added for ${ruleCategory}.`);
   }
 
+  function scrollTo(element: HTMLElement | null) {
+    element?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function handleNav(item: string) {
+    setActiveNav(item);
+
+    if (item === "Dashboard") {
+      setActiveCategory("All");
+      setQuery("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (item === "Categories") {
+      scrollTo(categoriesRef.current);
+    } else if (item === "Search") {
+      scrollTo(mailRef.current);
+      window.setTimeout(() => searchInputRef.current?.focus(), 250);
+    } else if (item === "Rules") {
+      scrollTo(rulesRef.current);
+    } else if (item === "Sync") {
+      void runSync();
+    } else if (item === "Settings") {
+      scrollTo(settingsRef.current);
+    }
+  }
+
   return (
-    <main className="app-shell">
+    <main className={sidebarHidden ? "app-shell sidebar-hidden" : "app-shell"}>
       <aside className="sidebar" aria-label="Primary navigation">
         <div className="brand">
           <Image src="/logo.svg" alt="InboxLens logo" width={44} height={44} priority />
@@ -284,7 +353,7 @@ export function InboxLensApp() {
             <button
               className={item === activeNav ? "nav-item active" : "nav-item"}
               key={item}
-              onClick={() => setActiveNav(item)}
+              onClick={() => handleNav(item)}
               type="button"
             >
               {item === "Dashboard" && <Inbox size={18} />}
@@ -309,9 +378,19 @@ export function InboxLensApp() {
 
       <section className="workspace">
         <header className="topbar">
-          <div>
+          <div className="topbar-title">
+            <button
+              className="sidebar-toggle"
+              onClick={() => setSidebarHidden((current) => !current)}
+              title={sidebarHidden ? "Show sidebar" : "Hide sidebar"}
+              type="button"
+            >
+              {sidebarHidden ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+            <div>
             <h1>InboxLens</h1>
             <p>Classify Gmail into practical queues with rules, review, and controlled sync.</p>
+            </div>
           </div>
           <div className="topbar-actions">
             <div className={`sync-pill ${sync.phase}`}>
@@ -351,7 +430,7 @@ export function InboxLensApp() {
           <span className="progress-label">{progress}%</span>
         </div>
 
-        <section className="metric-grid" aria-label="Category counts">
+        <section className="metric-grid" aria-label="Category counts" ref={categoriesRef}>
           <button className={activeCategory === "All" ? "metric-card selected" : "metric-card"} onClick={() => setActiveCategory("All")} type="button">
             <div className="metric-icon all">
               <Inbox size={19} />
@@ -384,7 +463,7 @@ export function InboxLensApp() {
           })}
         </section>
 
-        <section className="content-grid">
+        <section className="content-grid" ref={mailRef}>
           <div className="mail-panel">
             <div className="panel-heading">
               <div>
@@ -393,7 +472,12 @@ export function InboxLensApp() {
               </div>
               <label className="search-box">
                 <Search size={17} />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search sender, subject, reason" />
+                <input
+                  ref={searchInputRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search sender, subject, reason"
+                />
               </label>
             </div>
 
@@ -448,6 +532,20 @@ export function InboxLensApp() {
                   <p>{selectedEmail.reason}</p>
                 </div>
 
+                <div className="mail-body-box">
+                  <div className="mail-body-heading">
+                    <strong>Full mail</strong>
+                    <Eye size={15} />
+                  </div>
+                  {mailBodyStatus === "loading" ? (
+                    <p>Loading full Gmail message...</p>
+                  ) : mailBodyStatus === "error" ? (
+                    <p>Could not load the full message. Reconnect Gmail and try again.</p>
+                  ) : (
+                    <p>{selectedEmail.bodyText ?? selectedEmail.snippet}</p>
+                  )}
+                </div>
+
                 <dl className="detail-list">
                   <div>
                     <dt>Category</dt>
@@ -485,7 +583,7 @@ export function InboxLensApp() {
         </section>
 
         <section className="bottom-grid">
-          <div className="rules-panel">
+          <div className="rules-panel" ref={rulesRef}>
             <div className="panel-heading compact">
               <div>
                 <h2>Rules</h2>
@@ -529,7 +627,7 @@ export function InboxLensApp() {
             </div>
           </div>
 
-          <div className="settings-panel">
+          <div className="settings-panel" ref={settingsRef}>
             <div className="panel-heading compact">
               <div>
                 <h2>Privacy and deployment</h2>

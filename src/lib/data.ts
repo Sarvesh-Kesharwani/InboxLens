@@ -3,6 +3,7 @@ import type { CategoryKey, MailItem, Rule, SyncState } from "./types";
 export const categories: CategoryKey[] = [
   "Important",
   "Finance / Bills",
+  "Shopping",
   "Shopping / Orders",
   "Travel",
   "Work",
@@ -18,6 +19,7 @@ export const categories: CategoryKey[] = [
 export const categoryColors: Record<CategoryKey, string> = {
   Important: "#ef4444",
   "Finance / Bills": "#0f766e",
+  Shopping: "#c2410c",
   "Shopping / Orders": "#d97706",
   Travel: "#2563eb",
   Work: "#4f46e5",
@@ -40,7 +42,14 @@ export const initialSyncState: SyncState = {
 
 export const initialRules: Rule[] = [
   { id: "rule-bank", pattern: "bank, card, statement, bill", category: "Finance / Bills", hits: 42, enabled: true },
-  { id: "rule-orders", pattern: "amazon, flipkart, delivered, invoice", category: "Shopping / Orders", hits: 31, enabled: true },
+  {
+    id: "rule-shopping-sites",
+    pattern: "amazon, flipkart, myntra, nykaa, skinkraft, ajio, meesho, tatacliq, snapdeal",
+    category: "Shopping",
+    hits: 48,
+    enabled: true,
+  },
+  { id: "rule-orders", pattern: "delivered, shipment, package, invoice", category: "Shopping / Orders", hits: 31, enabled: true },
   { id: "rule-security", pattern: "login, password, verification, otp", category: "Security / Login Alerts", hits: 27, enabled: true },
   { id: "rule-travel", pattern: "flight, hotel, booking, itinerary", category: "Travel", hits: 13, enabled: true },
 ];
@@ -52,6 +61,8 @@ export const sampleEmails: MailItem[] = [
     email: "no-reply@accounts.google.com",
     subject: "New sign-in on Windows",
     snippet: "We noticed a new sign-in to your Google Account from Chrome on Windows. Review activity if this was not you.",
+    bodyText:
+      "We noticed a new sign-in to your Google Account from Chrome on Windows.\n\nIf this was you, no action is needed. If this was not you, review your recent security activity and change your password.",
     receivedAt: "5:28 PM",
     category: "Security / Login Alerts",
     confidence: 96,
@@ -65,6 +76,8 @@ export const sampleEmails: MailItem[] = [
     email: "alerts@hdfcbank.net",
     subject: "Credit card statement for May",
     snippet: "Your card statement is ready. Minimum amount due and payment date are included in the attached statement.",
+    bodyText:
+      "Your credit card statement for May is ready.\n\nMinimum amount due, total amount due, and payment due date are available in your account. Pay before the due date to avoid late fees.",
     receivedAt: "4:44 PM",
     category: "Finance / Bills",
     confidence: 93,
@@ -78,12 +91,14 @@ export const sampleEmails: MailItem[] = [
     email: "shipment-tracking@amazon.in",
     subject: "Your package is arriving tomorrow",
     snippet: "Track your order and delivery window. Your invoice is available in your account order history.",
+    bodyText:
+      "Your Amazon package is arriving tomorrow.\n\nTrack your order from your account. Your invoice and return window are available in order history.",
     receivedAt: "3:16 PM",
-    category: "Shopping / Orders",
+    category: "Shopping",
     confidence: 91,
     unread: false,
-    reason: "Marketplace sender plus package and invoice language.",
-    labels: ["order", "delivery"],
+    reason: "Shopping-site sender matched the marketplace rule.",
+    labels: ["shopping", "marketplace"],
   },
   {
     id: "msg-004",
@@ -91,6 +106,8 @@ export const sampleEmails: MailItem[] = [
     email: "priya@studio.example",
     subject: "Can you send the revised dashboard by tonight?",
     snippet: "The design review moved earlier. Please send the revised dashboard build and notes before the call.",
+    bodyText:
+      "The design review moved earlier. Can you send the revised dashboard build and notes before the call tonight?\n\nPlease include the state changes and any blockers.",
     receivedAt: "2:22 PM",
     category: "Needs Reply",
     confidence: 87,
@@ -104,6 +121,8 @@ export const sampleEmails: MailItem[] = [
     email: "notifications@render.com",
     subject: "Deploy succeeded for inbox-service",
     snippet: "Your latest deploy finished successfully. View logs and service metrics from your Render dashboard.",
+    bodyText:
+      "Your latest deploy finished successfully.\n\nOpen the Render dashboard to view logs, service metrics, and deployment details.",
     receivedAt: "1:05 PM",
     category: "Work",
     confidence: 82,
@@ -117,6 +136,8 @@ export const sampleEmails: MailItem[] = [
     email: "booking@goindigo.in",
     subject: "Your Bengaluru itinerary",
     snippet: "Your flight itinerary and web check-in details are ready. Carry a valid government ID.",
+    bodyText:
+      "Your Bengaluru itinerary is ready.\n\nUse web check-in before departure and carry a valid government ID at the airport.",
     receivedAt: "12:30 PM",
     category: "Travel",
     confidence: 89,
@@ -130,6 +151,8 @@ export const sampleEmails: MailItem[] = [
     email: "team@figma.com",
     subject: "Weekly product updates",
     snippet: "Catch up on new collaboration features, prototypes, and design system improvements from this week.",
+    bodyText:
+      "This week in Figma: new collaboration improvements, prototype updates, and design-system workflow changes.\n\nOpen the full update to read more.",
     receivedAt: "11:18 AM",
     category: "Newsletters",
     confidence: 78,
@@ -143,12 +166,14 @@ export const sampleEmails: MailItem[] = [
     email: "offers@myntra.com",
     subject: "Extra 20% off ends tonight",
     snippet: "Your saved styles are now on sale. Use the code before midnight to unlock the discount.",
+    bodyText:
+      "Your saved Myntra styles are now on sale.\n\nUse the offer code before midnight to unlock the extra discount on eligible items.",
     receivedAt: "10:01 AM",
-    category: "Promotions",
-    confidence: 85,
+    category: "Shopping",
+    confidence: 94,
     unread: false,
-    reason: "Offer and discount language matched promotions.",
-    labels: ["sale", "offer"],
+    reason: "Shopping-site sender matched the marketplace rule.",
+    labels: ["shopping", "fashion"],
   },
   {
     id: "msg-009",
@@ -156,6 +181,7 @@ export const sampleEmails: MailItem[] = [
     email: "aarav@example.com",
     subject: "Dinner this weekend",
     snippet: "Are you free Saturday night? We can try the new place near Civil Lines.",
+    bodyText: "Are you free Saturday night?\n\nWe can try the new place near Civil Lines if you are around.",
     receivedAt: "Yesterday",
     category: "Personal",
     confidence: 81,
@@ -169,6 +195,8 @@ export const sampleEmails: MailItem[] = [
     email: "notes@papers.example",
     subject: "Long read: agent memory systems",
     snippet: "A saved article about memory retrieval, ranking, and user-controlled knowledge persistence.",
+    bodyText:
+      "A saved article about memory retrieval, ranking, and user-controlled knowledge persistence.\n\nRead later when you are working on assistant memory behavior.",
     receivedAt: "Yesterday",
     category: "Read Later",
     confidence: 74,

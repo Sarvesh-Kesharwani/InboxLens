@@ -1,6 +1,7 @@
 export type CategoryKey =
   | "Important"
   | "Finance / Bills"
+  | "Shopping"
   | "Shopping / Orders"
   | "Travel"
   | "Work"
@@ -18,6 +19,7 @@ export type MailItem = {
   email: string;
   subject: string;
   snippet: string;
+  bodyText?: string;
   receivedAt: string;
   category: CategoryKey;
   confidence: number;
